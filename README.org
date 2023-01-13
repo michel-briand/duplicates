@@ -1,0 +1,118 @@
+#+STARTUP: showall
+#+TITLE: Duplicates readme
+#+ATTR_HTML: :style margin-left: auto; margin-right: auto; font-size: 14px;
+
+* Introduction
+
+This repository proposes three scripts to manage your duplicate files.
+
+This first version of the scripts makes the hypothesis that your files
+are managed in a git repository ([fn:: TODO: implement the general
+case]).
+
+If you are running in
+[[https://www.enlightenment.org/about-terminology][Terminology]] the
+script makes use of its unique features. This will require that you
+install the ~ethumb~ utility (package ~libethumb-client-bin~ in
+Debian).
+
+
+* First step: a script to find duplicates
+
+: find_duplicates_in_git.sh
+
+Run this script in a directory (or sub-directory) of your git
+repository worktree containing a lot of duplicates.
+
+The script will find files with the same content, and records a list of
+duplicates in a temporary directory for each content hash.
+
+When done, the script outputs the name of the ~temporary directory~
+and some statistics. This will be the argument to the second script
+(~<tmp dir>~).
+
+A file in this temporary directory corresponds to (is named after) one
+specific content identified (hash value of git blob) and contains a
+list of files which shall have the same content.
+
+Same content means that if files are managed by git they corespond to the
+same blob: this is exact identity of contents.
+
+Same content could be fuzzy also. This is a planned improvement ([fn::
+ TODO: implement image diff program to guess near identical content]).
+
+This script uses a git alias (~git dupes~) discovered here [fn:1].
+
+
+* Second step: a script to iterate through all duplicates
+
+: remove_all_duplicates_in_git.sh <tmp dir>
+
+This script takes as argument the temporary directory where lists of
+duplicates found by the first script are saved.
+
+It loops over all files in the temporary directory, and for each it
+calls the third script. This file is a ~list of duplicates~ for one
+content.
+
+If the sub-program executes without error and the git status tells
+that there are uncommited changes, the script automatically commits
+the changes (it calls ~git add -u~ and ~git commit~).
+
+To abort the script, one can always use ^C.
+
+If you want to restart the process, you have to ignore all errors for
+already passed iterations.
+
+Possible improvement is to retry this iteration ([fn:: TODO: implement
+retry in loop]).
+
+
+* Third step: a script to interactively handle an image and its duplicates
+
+: remove_duplicates_in_git.sh <list of duplicates for one content>
+
+Given a list of duplicates, this script interactively lists all the
+images and offers a menu to choose what action to do:
+
+- =q= quit (abort caller loop)
+- =p= pass (continue caller loop)
+- =/= choose to remove all files
+- =number= choose one file to keep and remove the other (default choice)
+- =^C= to abort
+
+The script uses Terminology features:
+- to display inline image thumbnails in the terminal
+- to enable full terminal-width image view by clicking on the image full path
+
+It creates a batch script to remove files and ask for a confirmation.
+
+Commit has to be done manually or by calling script (second step).
+
+
+** View the list of thumbnails
+
+#+ATTR_HTML: :alt view list of thumbnails :width 50%
+[[file:./doc/view_list_of_thumbnails.png][file:./doc/view_list_of_thumbnails.png]]
+
+** View one image in full size of the terminal
+
+#+ATTR_HTML: :alt view list of thumbnails :width 50%
+[[file:./doc/view_full_image.png][file:./doc/view_full_image.png]]
+
+
+** Interactive choose
+
+#+ATTR_HTML: :alt view list of thumbnails :width 50%
+[[file:./doc/interactive_choose.png][file:./doc/interactive_choose.png]]
+
+
+** Confirm removal
+
+#+ATTR_HTML: :alt view list of thumbnails :width 50%
+[[file:./doc/interactive_confirm.png][file:./doc/interactive_confirm.png]]
+
+
+----
+
+[fn:1] https://stackoverflow.com/questions/224687/git-find-duplicate-blobs-files-in-this-tree
